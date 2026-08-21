@@ -26,6 +26,8 @@ export function setUnauthorizedHandler(handler: (() => Promise<void>) | null) {
   unauthorizedHandler = handler;
 }
 
+const AUTH_ENDPOINT = "/api/auth/telegram";
+
 async function request<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -36,7 +38,10 @@ async function request<T>(path: string, init: RequestInit = {}, retried = false)
     },
   });
 
-  if (response.status === 401 && !retried && unauthorizedHandler) {
+  // Never trigger re-auth for the auth endpoint's own request — the handler
+  // it would call IS this same endpoint, so a 401 here (e.g. mock auth
+  // disabled, or invalid initData) would otherwise recurse forever.
+  if (response.status === 401 && !retried && unauthorizedHandler && path !== AUTH_ENDPOINT) {
     await unauthorizedHandler();
     return request<T>(path, init, true);
   }
