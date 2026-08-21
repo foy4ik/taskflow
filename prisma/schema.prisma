@@ -1,0 +1,118 @@
+// TaskFlow — Prisma schema
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum Locale {
+  EN
+  RU
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+enum ReminderChannel {
+  TELEGRAM
+}
+
+model User {
+  id                   String          @id @default(cuid())
+  telegramId           String          @unique
+  username             String?
+  firstName            String
+  lastName             String?
+  languageCode         String?
+  photoUrl             String?
+  timezone             String          @default("UTC")
+  theme                ThemePreference @default(SYSTEM)
+  locale               Locale          @default(EN)
+  notificationsEnabled Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  tasks      Task[]
+  reminders  Reminder[]
+  categories Category[]
+
+  @@index([telegramId])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String?
+  color     String?
+  userId    String? // null = shared system default, seeded once
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  priority    Priority   @default(MEDIUM)
+  categoryId  String
+  category    Category   @relation(fields: [categoryId], references: [id])
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  reminders Reminder[]
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([categoryId])
+}
+
+model Reminder {
+  id        String          @id @default(cuid())
+  taskId    String
+  task      Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  remindAt  DateTime
+  channel   ReminderChannel @default(TELEGRAM)
+  status    ReminderStatus  @default(PENDING)
+  sentAt    DateTime?
+  createdAt DateTime        @default(now())
+
+  @@index([status, remindAt])
+  @@index([userId])
+}

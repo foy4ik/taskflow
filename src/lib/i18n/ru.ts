@@ -1,0 +1,137 @@
+import type { Dictionary } from "./en";
+
+function pluralize(count: number, one: string, few: string, many: string): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+export const ru: Dictionary = {
+  common: {
+    save: "Сохранить",
+    saving: "Сохранение…",
+    cancel: "Отмена",
+    delete: "Удалить",
+    edit: "Изменить",
+    create: "Создать",
+    creating: "Создание…",
+    loading: "Загрузка…",
+    retry: "Повторить",
+    close: "Закрыть",
+    back: "Назад",
+  },
+  nav: {
+    home: "Главная",
+    tasks: "Задачи",
+    statistics: "Статистика",
+    settings: "Настройки",
+  },
+  home: {
+    greetingMorning: "Доброе утро",
+    greetingAfternoon: "Добрый день",
+    greetingEvening: "Добрый вечер",
+    today: "Сегодня",
+    tasksLabel: (count) => `${count} ${pluralize(count, "задача", "задачи", "задач")}`,
+    completedLabel: (count) => `${count} выполнено`,
+    remainingLabel: (count) => `${count} осталось`,
+    seeAll: "Все задачи",
+    emptyTitle: "Все дела сделаны 🎉",
+    emptyBody: "Задач пока нет — нажмите +, чтобы добавить первую.",
+  },
+  tasks: {
+    title: "Задачи",
+    searchPlaceholder: "Поиск задач…",
+    filters: {
+      all: "Все",
+      today: "Сегодня",
+      upcoming: "Предстоящие",
+      overdue: "Просроченные",
+      completed: "Завершённые",
+    },
+    sortLabel: "Сортировка",
+    sort: {
+      dueDate: "По сроку",
+      priority: "По приоритету",
+      createdAt: "По дате создания",
+    },
+    sortOrder: {
+      asc: "По возрастанию",
+      desc: "По убыванию",
+    },
+    emptyTitle: "Здесь пока пусто",
+    emptyBody: "Попробуйте другой фильтр или создайте новую задачу.",
+    noResults: (query) => `Ничего не найдено по запросу «${query}»`,
+  },
+  priority: {
+    low: "Низкий",
+    medium: "Средний",
+    high: "Высокий",
+  },
+  category: {
+    label: "Категория",
+  },
+  taskForm: {
+    createTitle: "Новая задача",
+    editTitle: "Изменить задачу",
+    titleLabel: "Название",
+    titlePlaceholder: "Что нужно сделать?",
+    descriptionLabel: "Описание",
+    descriptionPlaceholder: "Добавьте детали (необязательно)",
+    dateLabel: "Дата",
+    timeLabel: "Время",
+    priorityLabel: "Приоритет",
+    categoryLabel: "Категория",
+    submitCreate: "Создать задачу",
+    submitEdit: "Сохранить изменения",
+    successCreate: "Задача создана",
+    successEdit: "Задача обновлена",
+    errorGeneric: "Не удалось сохранить задачу. Попробуйте ещё раз.",
+    titleRequired: "Введите название",
+    categoryRequired: "Выберите категорию",
+  },
+  taskDetail: {
+    title: "Детали задачи",
+    complete: "Выполнить",
+    reopen: "Вернуть в работу",
+    edit: "Изменить",
+    delete: "Удалить",
+    deleteConfirmTitle: "Удалить эту задачу?",
+    deleteConfirmBody: "Это действие нельзя отменить.",
+    deleteConfirmAction: "Удалить",
+    deleted: "Задача удалена",
+    noDescription: "Нет описания",
+    noDueDate: "Без срока",
+    completedOn: (date) => `Выполнено ${date}`,
+  },
+  statistics: {
+    title: "Статистика",
+    completed: "Выполнено задач",
+    completionRate: "Процент выполнения",
+    byCategory: "По категориям",
+    byDay: "Последние 7 дней",
+    noData: "Пока недостаточно данных — создайте несколько задач.",
+  },
+  settings: {
+    title: "Настройки",
+    profile: "Профиль Telegram",
+    notifications: "Уведомления",
+    notificationsHint: "Напоминания о задачах со сроком выполнения",
+    timezone: "Часовой пояс",
+    theme: "Тема",
+    themeLight: "Светлая",
+    themeDark: "Тёмная",
+    themeSystem: "Системная / Telegram",
+    language: "Язык",
+    languageEn: "English",
+    languageRu: "Русский",
+    saved: "Настройки сохранены",
+  },
+  states: {
+    errorTitle: "Что-то пошло не так",
+    errorBody: "Пожалуйста, попробуйте ещё раз.",
+    offlineTitle: "Нет подключения",
+    offlineBody: "Проверьте соединение — мы повторим попытку автоматически.",
+  },
+};
