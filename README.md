@@ -85,6 +85,7 @@ Copy `.env.example` to `.env` and fill in:
 | `ALLOW_MOCK_TELEGRAM_AUTH` | `true`/`false`. Dev-only fallback auth for testing outside Telegram — see below. **Must be unset/`false` in production**; it's also hard-gated by `NODE_ENV !== "production"` server-side regardless of this flag. |
 | `NEXT_PUBLIC_APP_URL` | Public URL of the app (used in a few places for absolute links). |
 | `CRON_SECRET` | Shared secret required (as `x-cron-secret` header) to call `POST /api/cron/reminders`. |
+| `TELEGRAM_WEBHOOK_SECRET` | Verifies incoming calls to `POST /api/telegram/webhook` via the `X-Telegram-Bot-Api-Secret-Token` header. Any random string; pass the same value as `secret_token` when calling `setWebhook` (see below). |
 
 Note: Prisma 7's CLI (`migrate`, `generate`, `seed`) reads `DATABASE_URL` from `prisma.config.ts`, not directly from `.env` — that file already does `import "dotenv/config"` so it Just Works as long as `.env` exists. Next.js itself loads `.env` normally for the running app.
 
@@ -142,6 +143,23 @@ To test with a real Telegram bot instead of the dev mock:
 
 Your Telegram profile (name, username, photo, language) will flow through `POST /api/auth/telegram`, get HMAC-verified against `TELEGRAM_BOT_TOKEN`, and create/update your `User` row — the client's claimed identity is never trusted on its own.
 
+### Bot replies (`/start` welcome message)
+
+`POST /api/telegram/webhook` handles updates sent directly to the bot (not the Mini App) — today just `/start`, replying with a welcome message and an inline button that launches the Mini App. It's authenticated via the `X-Telegram-Bot-Api-Secret-Token` header, checked against `TELEGRAM_WEBHOOK_SECRET` — never via the session cookie, since this is a server-to-server call from Telegram, not a signed-in user request.
+
+To register it, call Telegram's `setWebhook` once (from anywhere, using your bot token):
+
+```bash
+curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://<your-domain>/api/telegram/webhook",
+    "secret_token": "<TELEGRAM_WEBHOOK_SECRET>"
+  }'
+```
+
+Check it's active with `GET https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/getWebhookInfo`.
+
 ## Production deployment
 
 Any Node-capable host works (the app is a standard Next.js app); Vercel is the path of least resistance:
@@ -151,7 +169,8 @@ Any Node-capable host works (the app is a standard Next.js app); Vercel is the p
 3. Run `npx prisma migrate deploy` against the production database (a one-off build step or release command).
 4. Deploy. The app must be served over HTTPS (required both by Telegram and by the session cookie's `Secure` attribute).
 5. Update your bot's Web App URL in BotFather to the production domain.
-6. If you want real reminder delivery, point a scheduler (Vercel Cron, a GitHub Actions schedule, etc.) at `POST /api/cron/reminders` with an `x-cron-secret` header matching `CRON_SECRET`, and implement the actual Telegram `sendMessage` call in `lib/notifications/sendReminder.ts` (the extension point is already wired up — see the comment there).
+6. Register the webhook (see [Bot replies](#bot-replies-start-welcome-message) above) pointing at `https://<your-domain>/api/telegram/webhook`, so `/start` gets a reply.
+7. If you want real reminder delivery, point a scheduler (Vercel Cron, a GitHub Actions schedule, etc.) at `POST /api/cron/reminders` with an `x-cron-secret` header matching `CRON_SECRET`, and implement the actual Telegram `sendMessage` call in `lib/notifications/sendReminder.ts` (the extension point is already wired up — see the comment there).
 
 ## Known limitations
 
