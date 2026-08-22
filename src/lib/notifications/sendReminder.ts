@@ -1,24 +1,26 @@
 import { prisma } from "@/lib/prisma";
 import { ReminderStatus } from "@/generated/prisma/enums";
 import type { Reminder, Task, User } from "@/generated/prisma/client";
+import { sendTelegramMessage } from "@/lib/telegram/bot";
 
 type ReminderWithRelations = Reminder & { task: Task; user: User };
 
 /**
- * The extension point for real reminder delivery. Today this just logs and
- * marks the reminder SENT — wiring it up for real is:
- *   1. Call the Telegram Bot API: POST https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/sendMessage
- *      with { chat_id: user.telegramId, text: `Reminder: ${task.title}` }.
- *   2. Point a real scheduler (Vercel Cron, a hosted cron job, etc.) at
- *      POST /api/cron/reminders on an interval, authenticated with CRON_SECRET.
- * The data model (Reminder rows created/updated alongside Task.dueDate) and
- * the protected endpoint already exist — only the delivery call is a stub.
+ * Delivers one due reminder as a Telegram message, with an inline button
+ * that deep-links straight to the task. Called by POST /api/cron/reminders
+ * for every PENDING reminder whose `remindAt` has passed.
  */
 export async function sendReminder(reminder: ReminderWithRelations): Promise<void> {
   try {
-    console.log(
-      `[reminder] Would notify Telegram user ${reminder.user.telegramId} about "${reminder.task.title}"`
-    );
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+    await sendTelegramMessage({
+      chatId: reminder.user.telegramId,
+      text: `⏰ Напоминание: ${reminder.task.title}`,
+      webAppButton: appUrl
+        ? { text: "Открыть задачу", url: `${appUrl}/tasks/${reminder.task.id}` }
+        : undefined,
+    });
 
     await prisma.reminder.update({
       where: { id: reminder.id },

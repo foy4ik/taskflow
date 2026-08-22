@@ -5,10 +5,9 @@ import { ReminderStatus } from "@/generated/prisma/enums";
 import { sendReminder } from "@/lib/notifications/sendReminder";
 
 /**
- * Extension-point endpoint: processes any due, still-pending reminders.
- * Not wired to a live scheduler in this build — intended to be invoked by a
- * real cron trigger (Vercel Cron, GitHub Actions schedule, etc.) with
- * `x-cron-secret: <CRON_SECRET>`. See lib/notifications/sendReminder.ts.
+ * Processes any due, still-pending reminders — invoked every 5 minutes by
+ * the `.github/workflows/reminders.yml` scheduled workflow, authenticated
+ * via `x-cron-secret: <CRON_SECRET>`. See lib/notifications/sendReminder.ts.
  */
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-cron-secret");
@@ -20,7 +19,14 @@ export async function POST(request: NextRequest) {
   }
 
   const dueReminders = await prisma.reminder.findMany({
-    where: { status: ReminderStatus.PENDING, remindAt: { lte: new Date() } },
+    where: {
+      status: ReminderStatus.PENDING,
+      remindAt: { lte: new Date() },
+      // Respect the user's Settings > Notifications toggle. Left PENDING
+      // (not skipped forever) so re-enabling notifications later still
+      // delivers it, just later than originally scheduled.
+      user: { notificationsEnabled: true },
+    },
     include: { task: true, user: true },
     take: 50,
   });

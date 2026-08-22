@@ -1,0 +1,25 @@
+name: Process task reminders
+
+on:
+  schedule:
+    # Every 5 minutes. GitHub doesn't guarantee exact timing under load, but
+    # reminders are idempotent (still PENDING until sent), so a delayed run
+    # just catches up.
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call POST /api/cron/reminders
+        run: |
+          status=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \
+            "${{ vars.APP_URL }}/api/cron/reminders" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}")
+          echo "HTTP status: $status"
+          cat /tmp/response.json
+          if [ "$status" -ge 300 ]; then
+            echo "Reminder cron call failed"
+            exit 1
+          fi

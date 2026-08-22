@@ -41,7 +41,10 @@ src/
       statistics/route.ts
       categories/route.ts
       me/route.ts              # GET/PATCH profile & preferences
-      cron/reminders/route.ts   # reminder-delivery extension point
+      cron/reminders/route.ts   # delivers due reminders — called every 5min by .github/workflows/reminders.yml
+      telegram/webhook/route.ts  # bot updates (/start -> welcome message + Open App button)
+
+.github/workflows/reminders.yml  # scheduled trigger for the reminders cron endpoint
 
   components/
     ui/                   # shadcn/ui primitives (Base UI under the hood)
@@ -170,9 +173,19 @@ Any Node-capable host works (the app is a standard Next.js app); Vercel is the p
 4. Deploy. The app must be served over HTTPS (required both by Telegram and by the session cookie's `Secure` attribute).
 5. Update your bot's Web App URL in BotFather to the production domain.
 6. Register the webhook (see [Bot replies](#bot-replies-start-welcome-message) above) pointing at `https://<your-domain>/api/telegram/webhook`, so `/start` gets a reply.
-7. If you want real reminder delivery, point a scheduler (Vercel Cron, a GitHub Actions schedule, etc.) at `POST /api/cron/reminders` with an `x-cron-secret` header matching `CRON_SECRET`, and implement the actual Telegram `sendMessage` call in `lib/notifications/sendReminder.ts` (the extension point is already wired up — see the comment there).
+7. Set up the reminder scheduler (see [Reminder delivery](#reminder-delivery) below).
+
+### Reminder delivery
+
+`Reminder` rows are created/updated automatically alongside `Task.dueDate`. `POST /api/cron/reminders` (protected by `CRON_SECRET`) finds every due, still-`PENDING` reminder for users with notifications enabled and delivers it via `sendReminder()` → `sendTelegramMessage()` — a real Telegram message with an inline button that deep-links to the task.
+
+Nothing calls that endpoint on its own — [`.github/workflows/reminders.yml`](.github/workflows/reminders.yml) does, every 5 minutes, via a scheduled GitHub Actions workflow (no extra hosting/account needed, since the code already lives on GitHub). To enable it, in the repo's **Settings → Secrets and variables → Actions**:
+
+- Add repository **variable** `APP_URL` = your production URL (e.g. `https://taskflow-seven-gamma-25.vercel.app`).
+- Add repository **secret** `CRON_SECRET` = the same value as the `CRON_SECRET` env var set on your host.
+
+GitHub Actions' schedule isn't guaranteed to the minute (it can lag under platform load), but reminders are idempotent — a delayed run just catches up, nothing gets sent twice. You can also trigger it manually from the *Actions* tab (`workflow_dispatch`) to test it immediately instead of waiting.
 
 ## Known limitations
 
-- **Reminder delivery is a stub.** `Reminder` rows are created/updated automatically alongside `Task.dueDate`, and `POST /api/cron/reminders` (secret-protected) will pick up due ones — but `sendReminder()` currently just logs and marks them `SENT` instead of calling the Telegram Bot API. Wiring that call up, plus pointing a real scheduler at the endpoint, is the last step for live push reminders.
 - **Date-bucket filters (Today/Upcoming/Overdue) use the server's UTC clock**, not each user's `timezone` field. Good enough for a single-timezone dev/demo use, but a user far from UTC could see a task's bucket flip a few hours off from their local midnight.
