@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -34,7 +35,13 @@ export function SortMenu({ sort, order, onChange }: SortMenuProps) {
         {t.tasks.sort[sort]}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{t.tasks.sortLabel}</DropdownMenuLabel>
+        {/* DropdownMenuLabel (Base UI's Menu.GroupLabel) throws if it isn't
+            inside a Menu.Group/Menu.RadioGroup — it was a direct child of
+            Content before, which crashed the whole app (no error boundary
+            existed to contain it) the moment this menu opened. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{t.tasks.sortLabel}</DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
           value={sort}
