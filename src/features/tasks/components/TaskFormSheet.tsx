@@ -17,6 +17,7 @@ import { useUpdateTask } from "../hooks/useUpdateTask";
 import { useI18n } from "@/providers/I18nProvider";
 import { useTelegramMainButton } from "@/hooks/useTelegramMainButton";
 import { useTelegramBackButton } from "@/hooks/useTelegramBackButton";
+import { useTelegramWebApp } from "@/providers/TelegramProvider";
 import { Priority } from "@/generated/prisma/enums";
 import type { Task } from "@/types/task";
 
@@ -56,6 +57,7 @@ function toFormDefaults(task?: Task | null): FormValues {
 /** Shared create/edit form, rendered as a bottom Sheet. */
 export function TaskFormSheet({ open, onOpenChange, task }: TaskFormSheetProps) {
   const { t } = useI18n();
+  const { webApp } = useTelegramWebApp();
   const isEdit = Boolean(task);
   const { data: categories } = useCategories();
   const createTask = useCreateTask();
@@ -146,7 +148,12 @@ export function TaskFormSheet({ open, onOpenChange, task }: TaskFormSheetProps) 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Stacked by default: iOS's native date/time inputs don't reliably
+              shrink to fit a narrow grid column (their intrinsic content
+              width wins), so a 2-col grid on a phone-width viewport made
+              them visually overlap. Two columns only from sm: up, where
+              there's enough room either way. */}
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="task-date">{t.taskForm.dateLabel}</Label>
               <Input id="task-date" type="date" {...register("date")} />
@@ -212,11 +219,17 @@ export function TaskFormSheet({ open, onOpenChange, task }: TaskFormSheetProps) 
           </div>
         </form>
 
-        <SheetFooter>
-          <Button onClick={() => void onSubmit()} disabled={isSaving} className="w-full">
-            {isSaving ? t.common.saving : isEdit ? t.taskForm.submitEdit : t.taskForm.submitCreate}
-          </Button>
-        </SheetFooter>
+        {/* Inside Telegram, the native MainButton (wired above) is the
+            submit action — showing our own button too would duplicate it
+            at the bottom of the screen. Outside Telegram (dev/browser),
+            there's no MainButton, so this is the only way to submit. */}
+        {!webApp ? (
+          <SheetFooter>
+            <Button onClick={() => void onSubmit()} disabled={isSaving} className="w-full">
+              {isSaving ? t.common.saving : isEdit ? t.taskForm.submitEdit : t.taskForm.submitCreate}
+            </Button>
+          </SheetFooter>
+        ) : null}
       </SheetContent>
     </Sheet>
   );
