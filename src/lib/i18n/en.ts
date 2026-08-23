@@ -73,6 +73,15 @@ export const en = {
     timeLabel: "Time",
     priorityLabel: "Priority",
     categoryLabel: "Category",
+    reminderLabel: "Remind me",
+    reminderOptions: {
+      AT_TIME: "At the time",
+      THIRTY_MIN_BEFORE: "30 minutes before",
+      ONE_HOUR_BEFORE: "1 hour before",
+      ONE_DAY_BEFORE: "1 day before",
+      NONE: "Don't remind",
+    },
+    reminderNoneHint: "We'll still nudge you 1 hour after the due time if the task isn't done yet.",
     submitCreate: "Create task",
     submitEdit: "Save changes",
     successCreate: "Task created",
@@ -93,6 +102,7 @@ export const en = {
     deleted: "Task deleted",
     noDescription: "No description",
     noDueDate: "No due date",
+    reminder: "Reminder",
     completedOn: (date: string) => `Completed ${date}`,
   },
   statistics: {

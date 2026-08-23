@@ -18,8 +18,16 @@ import { useI18n } from "@/providers/I18nProvider";
 import { useTelegramMainButton } from "@/hooks/useTelegramMainButton";
 import { useTelegramBackButton } from "@/hooks/useTelegramBackButton";
 import { useTelegramWebApp } from "@/providers/TelegramProvider";
-import { Priority } from "@/generated/prisma/enums";
+import { Priority, ReminderOffset } from "@/generated/prisma/enums";
 import type { Task } from "@/types/task";
+
+const REMINDER_OPTIONS = [
+  ReminderOffset.AT_TIME,
+  ReminderOffset.THIRTY_MIN_BEFORE,
+  ReminderOffset.ONE_HOUR_BEFORE,
+  ReminderOffset.ONE_DAY_BEFORE,
+  ReminderOffset.NONE,
+];
 
 const formSchema = z.object({
   title: z.string().trim().min(1),
@@ -28,6 +36,7 @@ const formSchema = z.object({
   categoryId: z.string().min(1),
   date: z.string().optional(),
   time: z.string().optional(),
+  reminderOffset: z.enum(ReminderOffset),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,7 +50,15 @@ interface TaskFormSheetProps {
 
 function toFormDefaults(task?: Task | null): FormValues {
   if (!task) {
-    return { title: "", description: "", priority: Priority.MEDIUM, categoryId: "", date: "", time: "" };
+    return {
+      title: "",
+      description: "",
+      priority: Priority.MEDIUM,
+      categoryId: "",
+      date: "",
+      time: "",
+      reminderOffset: ReminderOffset.THIRTY_MIN_BEFORE,
+    };
   }
   const due = task.dueDate ? new Date(task.dueDate) : null;
   return {
@@ -51,6 +68,7 @@ function toFormDefaults(task?: Task | null): FormValues {
     categoryId: task.categoryId,
     date: due ? format(due, "yyyy-MM-dd") : "",
     time: due ? format(due, "HH:mm") : "",
+    reminderOffset: task.reminderOffset,
   };
 }
 
@@ -83,6 +101,8 @@ export function TaskFormSheet({ open, onOpenChange, task }: TaskFormSheetProps) 
   }, [open, task]);
 
   const categoryId = watch("categoryId");
+  const dateValue = watch("date");
+  const reminderOffsetValue = watch("reminderOffset");
   useEffect(() => {
     if (!isEdit && categories?.length && !categoryId) {
       setValue("categoryId", categories[0].id);
@@ -100,6 +120,7 @@ export function TaskFormSheet({ open, onOpenChange, task }: TaskFormSheetProps) 
       priority: values.priority,
       categoryId: values.categoryId,
       dueDate,
+      reminderOffset: values.reminderOffset,
     };
 
     if (isEdit && task) {
@@ -163,6 +184,38 @@ export function TaskFormSheet({ open, onOpenChange, task }: TaskFormSheetProps) 
               <Input id="task-time" type="time" {...register("time")} />
             </div>
           </div>
+
+          {/* Only meaningful once there's a due date to remind about. */}
+          {dateValue ? (
+            <div className="flex flex-col gap-1.5">
+              <Label>{t.taskForm.reminderLabel}</Label>
+              <Controller
+                control={control}
+                name="reminderOffset"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {(value: string) =>
+                          t.taskForm.reminderOptions[value as keyof typeof t.taskForm.reminderOptions] ?? value
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {t.taskForm.reminderOptions[option]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {reminderOffsetValue === ReminderOffset.NONE ? (
+                <p className="text-xs text-muted-foreground">{t.taskForm.reminderNoneHint}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">

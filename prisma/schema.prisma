@@ -43,6 +43,16 @@ enum ReminderChannel {
   TELEGRAM
 }
 
+enum ReminderOffset {
+  AT_TIME
+  THIRTY_MIN_BEFORE
+  ONE_HOUR_BEFORE
+  ONE_DAY_BEFORE
+  /// Still reminds — just later: 1h *after* dueDate, only if the task is
+  /// still PENDING by then. Not literally "no reminder ever".
+  NONE
+}
+
 model User {
   id                   String          @id @default(cuid())
   telegramId           String          @unique
@@ -80,19 +90,20 @@ model Category {
 }
 
 model Task {
-  id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  status      TaskStatus @default(PENDING)
-  priority    Priority   @default(MEDIUM)
-  categoryId  String
-  category    Category   @relation(fields: [categoryId], references: [id])
-  dueDate     DateTime?
-  completedAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  status         TaskStatus     @default(PENDING)
+  priority       Priority       @default(MEDIUM)
+  categoryId     String
+  category       Category       @relation(fields: [categoryId], references: [id])
+  dueDate        DateTime?
+  reminderOffset ReminderOffset @default(THIRTY_MIN_BEFORE)
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   reminders Reminder[]
 

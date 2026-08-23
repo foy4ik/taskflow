@@ -4,7 +4,8 @@ import { requireUserId } from "@/lib/auth/requireUser";
 import { withErrorHandling, NotFoundError } from "@/lib/api/errors";
 import { ok } from "@/lib/api/response";
 import { updateTaskSchema } from "@/lib/validation/task.schema";
-import { TaskStatus, ReminderStatus } from "@/generated/prisma/enums";
+import { TaskStatus } from "@/generated/prisma/enums";
+import { syncReminder } from "@/lib/tasks/syncReminder";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -49,6 +50,7 @@ export const PATCH = withErrorHandling(async (request: NextRequest, context: Rou
         priority: input.priority,
         categoryId: input.categoryId,
         dueDate: nextDueDate,
+        reminderOffset: input.reminderOffset,
         status: input.status,
         completedAt:
           input.status === undefined
@@ -60,12 +62,19 @@ export const PATCH = withErrorHandling(async (request: NextRequest, context: Rou
     });
     if (count === 0) return null;
 
-    if (nextDueDate !== undefined) {
-      await tx.reminder.deleteMany({ where: { taskId: id, status: ReminderStatus.PENDING } });
-      if (nextDueDate) {
-        await tx.reminder.create({ data: { taskId: id, userId, remindAt: nextDueDate } });
-      }
-    }
+    const task = await tx.task.findUniqueOrThrow({ where: { id } });
+    // Recomputes from the task's current state regardless of which fields
+    // this request touched — simpler than tracking every combination of
+    // dueDate/reminderOffset/status changes, and just as correct: cancels
+    // the reminder if now completed or due-date-less, otherwise replaces it
+    // with one freshly computed from dueDate + reminderOffset.
+    await syncReminder(tx, {
+      id: task.id,
+      userId,
+      dueDate: task.dueDate,
+      reminderOffset: task.reminderOffset,
+      status: task.status,
+    });
 
     return tx.task.findUnique({ where: { id }, include: { category: true } });
   });

@@ -1,4 +1,4 @@
-import type { Priority, TaskStatus } from "@/generated/prisma/enums";
+import type { Priority, ReminderOffset, TaskStatus } from "@/generated/prisma/enums";
 
 export interface Category {
   id: string;
@@ -18,6 +18,7 @@ export interface Task {
   categoryId: string;
   category: Category;
   dueDate: string | null;
+  reminderOffset: ReminderOffset;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -36,6 +37,7 @@ export interface CreateTaskPayload {
   priority: Priority;
   categoryId: string;
   dueDate?: string | null;
+  reminderOffset?: ReminderOffset;
 }
 
 export type UpdateTaskPayload = Partial<CreateTaskPayload> & { status?: TaskStatus };

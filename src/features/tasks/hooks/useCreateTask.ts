@@ -7,6 +7,7 @@ import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 import { useI18n } from "@/providers/I18nProvider";
 import type { ApiSuccessWithMeta } from "@/types/api";
 import type { Category, CreateTaskPayload, Task, TaskListMeta } from "@/types/task";
+import { ReminderOffset } from "@/generated/prisma/enums";
 
 type TaskListData = ApiSuccessWithMeta<Task[], TaskListMeta>;
 
@@ -41,6 +42,7 @@ export function useCreateTask() {
         categoryId: payload.categoryId,
         category,
         dueDate: payload.dueDate ?? null,
+        reminderOffset: payload.reminderOffset ?? ReminderOffset.THIRTY_MIN_BEFORE,
         completedAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

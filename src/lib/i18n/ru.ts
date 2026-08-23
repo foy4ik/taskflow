@@ -83,6 +83,15 @@ export const ru: Dictionary = {
     timeLabel: "Время",
     priorityLabel: "Приоритет",
     categoryLabel: "Категория",
+    reminderLabel: "Напомнить",
+    reminderOptions: {
+      AT_TIME: "В момент события",
+      THIRTY_MIN_BEFORE: "За полчаса",
+      ONE_HOUR_BEFORE: "За час",
+      ONE_DAY_BEFORE: "За сутки",
+      NONE: "Не напоминать",
+    },
+    reminderNoneHint: "Всё равно напомним через час после срока, если задача останется невыполненной.",
     submitCreate: "Создать задачу",
     submitEdit: "Сохранить изменения",
     successCreate: "Задача создана",
@@ -103,6 +112,7 @@ export const ru: Dictionary = {
     deleted: "Задача удалена",
     noDescription: "Нет описания",
     noDueDate: "Без срока",
+    reminder: "Напоминание",
     completedOn: (date) => `Выполнено ${date}`,
   },
   statistics: {

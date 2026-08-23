@@ -1,4 +1,4 @@
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Bell } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { PriorityBadge } from "./PriorityBadge";
@@ -61,6 +61,15 @@ export function TaskDetailContent({
           <p>{t.taskDetail.noDueDate}</p>
         )}
       </div>
+
+      {dueDate ? (
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Bell className="size-4" aria-hidden="true" />
+          <span>
+            {t.taskDetail.reminder}: {t.taskForm.reminderOptions[task.reminderOffset]}
+          </span>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">

@@ -5,6 +5,8 @@ import { withErrorHandling, NotFoundError } from "@/lib/api/errors";
 import { ok, okWithMeta } from "@/lib/api/response";
 import { createTaskSchema, taskQuerySchema } from "@/lib/validation/task.schema";
 import { buildTaskWhere, buildTaskOrderBy } from "@/lib/tasks/queryHelpers";
+import { syncReminder } from "@/lib/tasks/syncReminder";
+import { TaskStatus } from "@/generated/prisma/enums";
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const userId = requireUserId(request);
@@ -61,15 +63,18 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         priority: input.priority,
         categoryId: input.categoryId,
         dueDate,
+        reminderOffset: input.reminderOffset,
       },
       include: { category: true },
     });
 
-    if (dueDate) {
-      await tx.reminder.create({
-        data: { taskId: created.id, userId, remindAt: dueDate },
-      });
-    }
+    await syncReminder(tx, {
+      id: created.id,
+      userId,
+      dueDate: created.dueDate,
+      reminderOffset: created.reminderOffset,
+      status: TaskStatus.PENDING,
+    });
 
     return created;
   });

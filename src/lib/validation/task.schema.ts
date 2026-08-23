@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Priority, TaskStatus } from "@/generated/prisma/enums";
+import { Priority, ReminderOffset, TaskStatus } from "@/generated/prisma/enums";
 
 const isoDateTime = z.iso.datetime({ offset: true });
 
@@ -9,6 +9,7 @@ export const createTaskSchema = z.object({
   priority: z.enum(Priority).default(Priority.MEDIUM),
   categoryId: z.string().min(1, "Category is required"),
   dueDate: isoDateTime.nullish(),
+  reminderOffset: z.enum(ReminderOffset).default(ReminderOffset.THIRTY_MIN_BEFORE),
 });
 
 export const updateTaskSchema = z
@@ -18,6 +19,7 @@ export const updateTaskSchema = z
     priority: z.enum(Priority),
     categoryId: z.string().min(1),
     dueDate: isoDateTime.nullable(),
+    reminderOffset: z.enum(ReminderOffset),
     status: z.enum(TaskStatus),
   })
   .partial();
