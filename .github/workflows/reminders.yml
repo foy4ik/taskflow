@@ -1,11 +1,10 @@
 name: Process task reminders
 
 on:
-  schedule:
-    # Every 5 minutes. GitHub doesn't guarantee exact timing under load, but
-    # reminders are idempotent (still PENDING until sent), so a delayed run
-    # just catches up.
-    - cron: "*/5 * * * *"
+  # No `schedule:` trigger — GitHub Actions cron timing isn't guaranteed
+  # (can slip several minutes under load, worse for low-activity repos),
+  # so cron-job.org now calls POST /api/cron/reminders every minute instead.
+  # Kept as workflow_dispatch only, for manual testing.
   workflow_dispatch: {}
 
 jobs:
